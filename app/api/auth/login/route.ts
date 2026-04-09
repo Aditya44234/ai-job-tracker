@@ -3,20 +3,27 @@ import { loginUser } from "@/lib/services/auth.service";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-    try {
-        await connectDB();
+  try {
+    await connectDB();
 
-        const { email, password } = await req.json();
+    const { email, password } = await req.json();
 
-        const { user, token } = await loginUser(email, password)
+    const { user, token } = await loginUser(email, password);
 
-        return NextResponse.json({ user, token });
+    const response = NextResponse.json({ user });
 
-    } catch (error: any) {
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
 
-        return NextResponse.json(
-            { error: error.message },
-            { status: 400 }
-        )
-    }
+    return response;
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 400 }
+    );
+  }
 }

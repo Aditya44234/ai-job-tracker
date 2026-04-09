@@ -1,27 +1,32 @@
 import { connectDB } from "@/lib/db/mongodb";
-import { registerUser } from "@/lib/services/auth.service";
+import { registerUser, loginUser } from "@/lib/services/auth.service";
 import { NextResponse } from "next/server";
 
-
-
-
-
 export async function POST(req: Request) {
-    try {
-        await connectDB();
+  try {
+    await connectDB();
 
-        const { name, email, password } = await req.json();
-        const user = await registerUser(name, email, password);
+    const {name, email, password } = await req.json();
 
-        return NextResponse.json({ user, message: "Registration successful" }, {
+    await registerUser(name,email, password);
 
-        });
+    // auto login after register
+    const { user, token } = await loginUser(email, password);
 
-    } catch (error: any) {
+    const response = NextResponse.json({ user });
 
-        return NextResponse.json(
-            { error: error.message },
-            { status: 400 }
-        )
-    }
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+      path: "/",
+    });
+
+    return response;
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 400 }
+    );
+  }
 }
